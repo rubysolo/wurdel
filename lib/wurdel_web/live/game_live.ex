@@ -57,6 +57,7 @@ defmodule WurdelWeb.GameLive do
       <.render_guess guess={game.current_guess} />
       <.render_won game={game} />
       <.render_lost game={game} />
+      <.render_keyboard game={game} />
     </div>
     """
   end
@@ -114,5 +115,39 @@ defmodule WurdelWeb.GameLive do
 
   def render_lost(assigns) do
     ~F{}
+  end
+
+  @top_row String.graphemes("qwertyuiop")
+  @middle_row String.graphemes("asdfghjkl")
+  @bottom_row String.graphemes("zxcvbnm")
+
+  def render_keyboard(%{game: %Game{guesses: guesses}} = assigns) do
+    rows =
+      [@top_row, @middle_row, @bottom_row]
+    guessed_letters =
+      guesses
+      |> Enum.flat_map(& String.graphemes(&1.word))
+      |> MapSet.new()
+
+    ~F"""
+    <div class="p-3  bg-gray-100 fixed bottom-0 left-1/2 right-1/2 -mx-[50%] ">
+      <div class="w-fit m-auto" :for={row <- rows}>
+        <.render_key key={key} guessed={MapSet.member?(guessed_letters, key)} :for={key <- row} />
+      </div>
+    </div>
+    """
+  end
+
+  def render_key(%{key: key, guessed: guessed} = assigns) do
+    color =
+      if guessed do
+        "bg-gray-500 text-white"
+      else
+        "bg-gray-300"
+      end
+
+    ~F"""
+    <div class={"mt-1 ml-1 first:ml-0 w-6 h-6 text-center inline-block uppercase rounded " <> color}>{key}</div>
+    """
   end
 end
