@@ -5,6 +5,9 @@ defmodule Wurdel.DuJour do
 
   use GenServer
 
+  @words File.read!("priv/words.txt")
+         |> String.split("\n", trim: true)
+
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, :ok, Keyword.merge(opts, name: __MODULE__))
   end
@@ -14,14 +17,15 @@ defmodule Wurdel.DuJour do
   end
 
   def handle_continue(:load_wordlist, state) do
-    :rand.seed(:default, 42) # make repeatable
-    words =
-      File.stream!("priv/words.txt")
-      |> Stream.map(&String.trim/1)
-      |> Enum.to_list()
-      |> Enum.shuffle()
+    # make order consistent
+    :rand.seed(:default, 42)
+    word_list = Enum.shuffle(@words)
 
-    {:noreply, Map.put(state, :words, words)}
+    {:noreply, Map.put(state, :words, word_list)}
+  end
+
+  def words do
+    @words
   end
 
   def word do
@@ -32,7 +36,7 @@ defmodule Wurdel.DuJour do
     # get offset for today
     offset =
       Date.utc_today()
-      |>  Date.diff(~D[2022-01-01])
+      |> Date.diff(~D[2022-01-01])
       |> rem(length(words))
 
     {:reply, Enum.at(words, offset), state}

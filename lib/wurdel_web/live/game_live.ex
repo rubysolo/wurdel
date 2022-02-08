@@ -4,7 +4,11 @@ defmodule WurdelWeb.GameLive do
   alias Wurdel.Game
 
   def mount(_params, _context, socket) do
-    socket = assign(socket, :game, Game.new_game())
+    socket =
+      socket
+      |> assign(:game, Game.new_game())
+      |> assign(:error, "")
+
     {:ok, socket}
   end
 
@@ -17,9 +21,17 @@ defmodule WurdelWeb.GameLive do
         %{assigns: %{game: %{current_guess: current_guess} = game}} = socket
       )
       when length(current_guess) == 5 do
-    game = Game.add_guess(game, Enum.join(current_guess))
 
-    {:noreply, assign(socket, :game, game)}
+    socket =
+      case Game.add_guess(game, Enum.join(current_guess)) do
+        %Game{} = game ->
+          assign(socket, :game, game)
+
+        {:error, :invalid_guess} ->
+          assign(socket, :error, "Invalid guess")
+      end
+
+    {:noreply, socket}
   end
 
   # remove letter from current guess
@@ -30,7 +42,12 @@ defmodule WurdelWeb.GameLive do
       ) do
     game = Game.remove_letter(game)
 
-    {:noreply, assign(socket, :game, game)}
+    socket =
+      socket
+      |> assign(:game, game)
+      |> assign(:error, "")
+
+    {:noreply, socket}
   end
 
   # add letter to current guess
@@ -46,7 +63,7 @@ defmodule WurdelWeb.GameLive do
   end
 
   # no-op
-  def handle_event("handle-key", %{"key" => _}, socket) do
+  def handle_event("handle-key", %{"key" => _letter}, socket) do
     {:noreply, socket}
   end
 
@@ -57,6 +74,7 @@ defmodule WurdelWeb.GameLive do
       <.render_guess guess={game.current_guess} />
       <.render_won game={game} />
       <.render_lost game={game} />
+      <.render_error error={@error} />
       <.render_keyboard game={game} />
     </div>
     """
@@ -99,7 +117,9 @@ defmodule WurdelWeb.GameLive do
 
   def render_won(%{game: %Game{status: :won}} = assigns) do
     ~F"""
+    <div class="text-center">
     Congratulations, you guessed the word! 🎉
+    </div>
     """
   end
 
@@ -109,7 +129,9 @@ defmodule WurdelWeb.GameLive do
 
   def render_lost(%{game: %Game{status: :lost}} = assigns) do
     ~F"""
+    <div class="text-center">
     Sorry, better luck next time. 😞
+    </div>
     """
   end
 
@@ -117,16 +139,22 @@ defmodule WurdelWeb.GameLive do
     ~F{}
   end
 
+  def render_error(%{error: error} = assigns) do
+    ~F"""
+    <div class="text-red-500 text-center">{error}</div>
+    """
+  end
+
   @top_row String.graphemes("qwertyuiop")
   @middle_row String.graphemes("asdfghjkl")
   @bottom_row String.graphemes("zxcvbnm")
 
   def render_keyboard(%{game: %Game{guesses: guesses}} = assigns) do
-    rows =
-      [@top_row, @middle_row, @bottom_row]
+    rows = [@top_row, @middle_row, @bottom_row]
+
     guessed_letters =
       guesses
-      |> Enum.flat_map(& String.graphemes(&1.word))
+      |> Enum.flat_map(&String.graphemes(&1.word))
       |> MapSet.new()
 
     ~F"""

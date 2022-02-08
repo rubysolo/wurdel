@@ -4,7 +4,14 @@ defmodule Wurdel.Game do
   """
   use TypedStruct
 
-  alias Wurdel.DuJour
+  alias Wurdel.{DuJour, Game}
+
+  @allowed_guesses ~w[priv/words.txt priv/allowed-guesses.txt]
+                   |> Enum.flat_map(fn filename ->
+                     filename
+                     |> File.read!()
+                     |> String.split("\n", trim: true)
+                   end)
 
   typedstruct enforce: true do
     @type status :: :playing | :won | :lost
@@ -25,7 +32,7 @@ defmodule Wurdel.Game do
   end
 
   def new_game do
-    %__MODULE__{
+    %Game{
       word: DuJour.word(),
       current_guess: [],
       guesses: [],
@@ -34,11 +41,11 @@ defmodule Wurdel.Game do
     }
   end
 
-  def add_letter(%__MODULE__{current_guess: current_guess} = game, letter) do
+  def add_letter(%Game{current_guess: current_guess} = game, letter) do
     %{game | current_guess: current_guess ++ [letter]}
   end
 
-  def remove_letter(%__MODULE__{current_guess: current_guess} = game) do
+  def remove_letter(%Game{current_guess: current_guess} = game) when length(current_guess) > 0 do
     current_guess =
       current_guess
       |> Enum.reverse()
@@ -48,14 +55,24 @@ defmodule Wurdel.Game do
     %{game | current_guess: current_guess}
   end
 
-  def add_guess(%__MODULE__{status: :won} = game, _guess), do: game
-  def add_guess(%__MODULE__{status: :lost} = game, _guess), do: game
+  def remove_letter(game), do: game
 
-  def add_guess(%__MODULE__{word: word, guesses: guesses} = game, word) when is_binary(word) do
+  def add_guess(%Game{} = game, guess) when guess in @allowed_guesses do
+    add_allowed_guess(game, guess)
+  end
+
+  def add_guess(_game, _guess) do
+    {:error, :invalid_guess}
+  end
+
+  def add_allowed_guess(%Game{status: :won} = game, _guess), do: game
+  def add_allowed_guess(%Game{status: :lost} = game, _guess), do: game
+
+  def add_allowed_guess(%Game{word: word, guesses: guesses} = game, word) when is_binary(word) do
     %{game | status: :won, current_guess: [], guesses: [new_guess(word, word) | guesses]}
   end
 
-  def add_guess(%__MODULE__{word: word, guesses: guesses} = game, guess) when is_binary(word) do
+  def add_allowed_guess(%Game{word: word, guesses: guesses} = game, guess) when is_binary(word) do
     next_status = if length(guesses) < 5, do: :playing, else: :lost
     %{game | status: next_status, current_guess: [], guesses: [new_guess(word, guess) | guesses]}
   end
