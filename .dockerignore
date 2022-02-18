@@ -1,0 +1,14 @@
+*.ez
+.elixir_ls
+/.fetch
+/_build/
+/assets/node_modules/
+/cover/
+/deps/
+/doc/
+/priv/static/assets/
+/priv/static/cache_manifest.json
+Dockerfile
+erl_crash.dump
+npm-debug.log
+wurdel-*.tar
