@@ -115,10 +115,36 @@ defmodule WurdelWeb.GameLive do
     """
   end
 
-  def render_won(%{game: %Game{status: :won}} = assigns) do
+  def render_won(%{game: %Game{status: :won, guesses: guesses}} = assigns) do
+    copyable_board = for guess <- Enum.reverse(guesses) do
+      squares = for status <- guess.letters do
+        case status do
+          :ok -> "🟩"
+          :wrong_position -> "🟨"
+          _ -> "⬛"
+        end
+      end
+
+      Enum.join(squares) <> "\n"
+    end
+
+    date =
+      :calendar.local_time()
+      |> elem(0)
+      |> then(fn {year, month, day} -> "#{month}/#{day}/#{year}" end)
+
     ~F"""
     <div class="text-center">
-    Congratulations, you guessed the word! 🎉
+      Congratulations, you guessed the word! 🎉
+
+      <div class="m-5">
+        <button id="share-solution" class="bg-blue-500 text-white px-3 py-1 rounded-lg">🙌 Share</button>
+      </div>
+
+      <textarea id="solution" class="hidden">
+        Wurdel {date} {length(guesses)}/6
+        {copyable_board}
+      </textarea>
     </div>
     """
   end

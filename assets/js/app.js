@@ -42,3 +42,41 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+function fallbackCopySolutionToClipboard() {
+  var solutionContainer = document.getElementById('solution');
+  solutionContainer.focus();
+  solutionContainer.select();
+
+  try {
+    var successful = document.execCommand('copy');
+    var msg = successful ? 'successful' : 'unsuccessful';
+    console.log('Fallback: Copying text command was ' + msg);
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+  }
+}
+
+function copySolutionToClipboard() {
+  if (!navigator.clipboard) {
+    fallbackCopySolutionToClipboard();
+    return;
+  }
+
+  var solution = document.getElementById('solution')
+                         .value
+                         .split("\n")
+                         .map((s) => s.trim())
+                         .join("\n");
+
+  navigator.clipboard.writeText(solution).then(function() {
+    console.log('Async: Copying to clipboard was successful!');
+  }, function(err) {
+    console.error('Async: Could not copy text: ', err);
+  });
+}
+
+document.addEventListener('click', function(e) {
+  if(e.target.id == 'share-solution') {
+    copySolutionToClipboard();
+  }
+});
