@@ -6,14 +6,18 @@ ARG mix_env=prod
 RUN apk add --update --no-cache build-base
 
 WORKDIR /build
-COPY . .
+COPY mix.exs .
+COPY mix.lock .
 
 ENV MIX_ENV ${mix_env}
 
 RUN mix local.hex --force
 RUN mix local.rebar --force
-RUN mix deps.get --only ${MIX_ENV} --include-children
 
+RUN mix deps.get --only ${MIX_ENV} --include-children
+RUN mix deps.compile
+
+COPY . .
 RUN mix compile
 RUN mix assets.deploy
 

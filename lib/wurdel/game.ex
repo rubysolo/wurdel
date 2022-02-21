@@ -6,12 +6,10 @@ defmodule Wurdel.Game do
 
   alias Wurdel.{DuJour, Game}
 
-  @allowed_guesses ~w[priv/words.txt priv/allowed-guesses.txt]
-                   |> Enum.flat_map(fn filename ->
-                     filename
-                     |> File.read!()
-                     |> String.split("\n", trim: true)
-                   end)
+  # superset of dujour words
+  @allowed_guesses "priv/allowed-guesses.txt"
+                    |> File.read!()
+                    |> String.split("\n", trim: true)
 
   typedstruct enforce: true do
     @type status :: :playing | :won | :lost
